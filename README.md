@@ -1,7 +1,6 @@
-<<<<<<< HEAD
 # Distributed Machine Learning Training System
 
-A web-based distributed machine learning training system that supports both single-GPU and multi-GPU training configurations. The system provides real-time training metrics visualization and export capabilities.
+Web-based distributed machine learning training system with real-time visualization and multi-GPU support
 
 ## Features
 
@@ -40,7 +39,7 @@ A web-based distributed machine learning training system that supports both sing
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/distributed-ml-training.git
+git clone https://github.com/spartow/distributed-ml-training.git
 cd distributed-ml-training
 ```
 
@@ -85,7 +84,3 @@ python web_ui.py
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-=======
-# distributed-ml-training
-Web-based distributed machine learning training system with real-time visualization and multi-GPU support
->>>>>>> ea019aa24e6e09f7824eb14bc16c2ff8713e6d73
