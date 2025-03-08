@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Status - Distributed ML System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .console-output {
+            background-color: #212529;
+            color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            height: 300px;
+            overflow-y: auto;
+        }
+        .chart-container {
+            margin-bottom: 20px;
+        }
+        .chart-image {
+            max-width: 100%;
+            height: auto;
+        }
+        .btn-group {
+            margin-bottom: 20px;
+        }
+        .stderr {
+            color: #dc3545;
+        }
+        .stdout {
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Training Status</h1>
+            <div>
+                <a href="/" class="btn btn-outline-secondary">Back to Configuration</a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <h5 class="card-title mb-3">Training Progress</h5>
+                    <div class="console-output" id="console-output">
+                        <div class="text-muted">Waiting for training to start...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <h5 class="card-title mb-3">Performance Metrics</h5>
+                    
+                    <div class="chart-container">
+                        <h6>Loss Curves</h6>
+                        <img id="loss-chart" class="chart-image mb-3" src="" alt="Loss Chart" style="display: none;">
+                    </div>
+
+                    <div class="chart-container">
+                        <h6>Accuracy Curves</h6>
+                        <img id="accuracy-chart" class="chart-image mb-3" src="" alt="Accuracy Chart" style="display: none;">
+                    </div>
+
+                    <div class="btn-group">
+                        <button id="export-loss" class="btn btn-outline-primary me-2" disabled>Export Loss Chart</button>
+                        <button id="export-accuracy" class="btn btn-outline-primary me-2" disabled>Export Accuracy Chart</button>
+                        <button id="export-data" class="btn btn-outline-primary" disabled>Export Data (CSV)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize variables
+        let trainingComplete = false;
+        const consoleOutput = document.getElementById('console-output');
+        const lossChart = document.getElementById('loss-chart');
+        const accuracyChart = document.getElementById('accuracy-chart');
+        const exportLossBtn = document.getElementById('export-loss');
+        const exportAccBtn = document.getElementById('export-accuracy');
+        const exportDataBtn = document.getElementById('export-data');
+
+        // Function to update charts
+        function updateCharts() {
+            // Update loss chart
+            fetch('/api/get_chart/loss')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.image) {
+                        lossChart.src = data.image;
+                        lossChart.style.display = 'block';
+                        exportLossBtn.disabled = false;
+                    }
+                });
+
+            // Update accuracy chart
+            fetch('/api/get_chart/accuracy')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.image) {
+                        accuracyChart.src = data.image;
+                        accuracyChart.style.display = 'block';
+                        exportAccBtn.disabled = false;
+                    }
+                });
+        }
+
+        // Set up event source for console output
+        const eventSource = new EventSource('/output_stream');
+        
+        eventSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            
+            data.forEach(([type, message]) => {
+                if (type === 'end') {
+                    eventSource.close();
+                    trainingComplete = true;
+                    exportDataBtn.disabled = false;
+                    
+                    // Final update of charts
+                    updateCharts();
+                    
+                    // Add completion message
+                    const div = document.createElement('div');
+                    div.className = 'text-warning';
+                    div.textContent = message;
+                    consoleOutput.appendChild(div);
+                } else {
+                    const div = document.createElement('div');
+                    div.className = type;
+                    div.textContent = message;
+                    consoleOutput.appendChild(div);
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                }
+            });
+        };
+
+        // Update charts periodically during training
+        const chartUpdateInterval = setInterval(() => {
+            if (trainingComplete) {
+                clearInterval(chartUpdateInterval);
+            } else {
+                updateCharts();
+            }
+        }, 2000);
+
+        // Handle export buttons
+        exportLossBtn.addEventListener('click', () => {
+            window.location.href = '/api/export_chart/loss';
+        });
+
+        exportAccBtn.addEventListener('click', () => {
+            window.location.href = '/api/export_chart/accuracy';
+        });
+
+        exportDataBtn.addEventListener('click', () => {
+            window.location.href = '/api/export_data';
+        });
+    </script>
+</body>
+</html>

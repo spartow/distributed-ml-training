@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Machine Learning System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1000px;
+        }
+        .system-info {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .training-config {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Distributed Machine Learning System</h1>
+        <p class="text-muted mb-4">Configure and run distributed training experiments</p>
+
+        <div class="system-info mb-4">
+            <h2 class="h5 mb-3">System Information</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <p class="mb-2"><strong>Python Version:</strong> <span id="python-version">Loading...</span></p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-2"><strong>PyTorch Version:</strong> <span id="pytorch-version">Loading...</span></p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-2"><strong>CUDA Available:</strong> <span id="cuda-available">Loading...</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="training-config">
+            <h2 class="h5 mb-3">Training Configuration</h2>
+            <form id="training-form" action="/start_training" method="POST">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="model">Model Architecture</label>
+                            <select class="form-control" id="model" name="model" required>
+                                {% for model in models %}
+                                <option value="{{ model }}">{{ model|upper }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="dataset">Dataset</label>
+                            <select class="form-control" id="dataset" name="dataset" required>
+                                {% for dataset in datasets %}
+                                <option value="{{ dataset }}">{{ dataset|upper }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="training_method">Training Method</label>
+                            <select class="form-control" id="training_method" name="training_method" required>
+                                <option value="single">Single-GPU/CPU</option>
+                                <option value="data_parallel">Data Parallel</option>
+                                <option value="distributed">Distributed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="batch_size">Batch Size</label>
+                            <input type="number" class="form-control" id="batch_size" name="batch_size" value="64" min="1" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="learning_rate">Learning Rate</label>
+                            <input type="number" class="form-control" id="learning_rate" name="learning_rate" value="0.01" step="0.001" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="epochs">Epochs</label>
+                            <input type="number" class="form-control" id="epochs" name="epochs" value="5" min="1" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="synthetic_size">Synthetic Dataset Size</label>
+                            <input type="number" class="form-control" id="synthetic_size" name="synthetic_size" value="10000" min="100" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="synthetic_dim">Feature Dimension</label>
+                            <input type="number" class="form-control" id="synthetic_dim" name="synthetic_dim" value="784" min="1" required>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Start Training</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load system information
+        fetch('/api/system_info')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('python-version').textContent = data.python_version;
+                document.getElementById('pytorch-version').textContent = data.pytorch_version;
+                document.getElementById('cuda-available').textContent = data.cuda_available ? 'Yes' : 'No';
+            })
+            .catch(error => {
+                console.error('Error fetching system info:', error);
+                document.getElementById('python-version').textContent = 'Error loading';
+                document.getElementById('pytorch-version').textContent = 'Error loading';
+                document.getElementById('cuda-available').textContent = 'Error loading';
+            });
+
+        // Handle form submission
+        document.getElementById('training-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Submit form
+            fetch('/start_training', {
+                method: 'POST',
+                body: new FormData(this)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = '/training_status';
+                } else {
+                    alert('Error starting training: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error starting training. Please check the console for details.');
+            });
+        });
+    </script>
+</body>
+</html>
