@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Distributed Machine Learning Training System
 
 A web-based distributed machine learning training system that supports both single-GPU and multi-GPU training configurations. The system provides real-time training metrics visualization and export capabilities.
